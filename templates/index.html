@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reproducir Audio</title>
+    <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Reproducción de audio en tiempo real</h1>
+
+    <script type="text/javascript">
+        const socket = io();
+
+        // Obtener acceso al micrófono
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                const audioContext = new AudioContext();
+                const audioSource = audioContext.createMediaStreamSource(stream);
+
+                // Conectar el audio al nodo de procesamiento
+                const scriptNode = audioContext.createScriptProcessor(4096, 1, 1);
+                audioSource.connect(scriptNode);
+                scriptNode.connect(audioContext.destination);
+
+                // Capturar los datos de audio y enviarlos al servidor
+                scriptNode.onaudioprocess = event => {
+                    const audioData = event.inputBuffer.getChannelData(0);
+                    socket.emit("audio_stream", audioData);
+                };
+            })
+            .catch(error => {
+                console.error("Error al acceder al micrófono:", error);
+            });
+    </script>
+</body>
+</html>
